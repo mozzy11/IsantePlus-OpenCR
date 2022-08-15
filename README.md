@@ -1,6 +1,4 @@
 
-## Components
-
 ### 1. iSantePlus EMR
 ### Links
 https://github.com/IsantePlus/openmrs-distro-isanteplus
@@ -33,10 +31,10 @@ https://docs.docker.com/compose/install/
 ### 2. Clone the  Repository
 
 ```sh
-git clone https://github.com/I-TECH-UW/sedish-haiti.org.git
+git clone https://github.com/mozzy11/IsantePlus-OpenCR.git
 ```
 
-### 3. Port-based Setup
+### 3. Running IsantePlus-OpenCR docker Setup
 
 
 **a) Pull all containers**  
@@ -90,10 +88,8 @@ sudo docker-compose -f docker-compose.ports.yml up -d shr-fhir opencr-fhir openc
 ```sh
 sudo docker-compose -f docker-compose.ports.yml up -d isanteplus-mysql isanteplus
 ```
-#### Start up SHR Streaming Pipeline
-```sh
-sudo docker-compose -f docker-compose.ports.yml up -d streaming-pipeline
-```
+
+
 
 
 

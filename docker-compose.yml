@@ -2,37 +2,6 @@ version: '3.3'
 
 services:
   ###
-  # nginx reverse proxy
-  # TODO: set up to use non-root user. See https://www.rockyourcode.com/run-docker-nginx-as-non-root-user/
-  ###
-  nginx:
-   # profiles: ['main']
-    image: nginx:latest
-    container_name: nginx
-    hostname: nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - certs:/etc/letsencrypt
-      - ./configs/nginx/nginx.conf:/etc/nginx/nginx.conf
-      - nginx-data:/var/www
-
-  certbot:
-   #  profiles: ['main']
-    image: certbot/dns-route53
-    container_name: certbot
-    entrypoint: "certbot certonly -n --agree-tos --email pmanko@uw.edu -d sedish-haiti.org -d '*.sedish-haiti.org' --dns-route53 --preferred-challenges=dns"
-    environment:
-    - AWS_ACCESS_KEY_ID
-    - AWS_SECRET_ACCESS_KEY
-    volumes:
-    - certs:/etc/letsencrypt
-    - letsencrypt:/var/lib/letsencrypt
-
-
-  ###
   # OpenCR
   ###
   opencr:
@@ -41,6 +10,9 @@ services:
     hostname: opencr
     image: intrahealth/opencr:latest
     restart: unless-stopped
+    ports:
+      - "3000:3000"
+    
     environment:
       - NODE_ENV=docker
       - HAPI_FHIR_URL=http://opencr-fhir:8080/fhir/metadata
@@ -57,6 +29,8 @@ services:
     restart: unless-stopped
     env_file:
       - configs/opencr/opencr.env
+    ports:
+      - "8090:8080"  
     volumes:
       - /data/hapi
   
@@ -66,6 +40,8 @@ services:
     hostname: es
     image: intrahealth/elasticsearch:latest
     restart: unless-stopped
+    ports:
+      - 9200:9200
     environment:
       - node.name=es01
       - discovery.type=single-node
@@ -83,6 +59,8 @@ services:
     hostname: isanteplus
     image: ghcr.io/isanteplus/docker-isanteplus-server:${ISANTEPLUS_DOCKER_VERSION}
     restart: unless-stopped
+    ports:
+      - "8080:8080"
     env_file:
       - ./configs/isanteplus/isanteplus.env
     volumes:
@@ -118,6 +96,14 @@ services:
     container_name: openhim-core
     image: jembi/openhim-core:latest
     restart: unless-stopped
+    ports:
+      - "8085:8080"
+      - "5000:5000"
+      - "5001:5001"
+      - "5050:5050"
+      - "5051:5051"
+      - "5052:5052"
+      - "7788:7788"
     environment:
       mongo_url: "mongodb://mongo-db/openhim"
       mongo_atnaUrl: "mongodb://mongo-db/openhim"
@@ -133,6 +119,8 @@ services:
     container_name: openhim-console
     image: jembi/openhim-console:latest
     restart: unless-stopped
+    ports:
+      - "9000:80"
     volumes:
       - ./configs/openhim-console/default.json:/usr/share/nginx/html/config/default.json
     healthcheck:
