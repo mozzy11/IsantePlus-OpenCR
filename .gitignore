@@ -1,0 +1,57 @@
+# Ignore OpenMRS modules + platform
+openmrs
+openmrs/*
+docker/isanteplus/openmrs-runtime.properties
+
+# node
+node_modules
+
+# vscode
+.vscode
+
+# config files
+config_docker.json
+tmpConfig.json
+
+# ipynb
+*.ipynb_checkpoints
+
+# macos
+*.DS_Store
+
+# vagrant
+.vagrant
+
+# server key/cert examples for ansible
+packaging/ansible/server_cert.pem
+packaging/ansible/server_key.pem
+server/certificates/server_cert.pem.bak
+server/certificates/server_key.pem.bak
+
+# client key/cert examples for ansible
+ansible_key.pem
+ansible_cert.pem
+ansible_csr.pem
+ansible.p12
+
+# mac
+.DS_Store
+
+# notebook checkpoints
+*.ipynb_checkpoints/
+/openmrs/
+
+server/log
+*.log
+
+hapi.properties
+
+configs/shr/.env
+configs/opencr-hapi/.env
+configs/opencr/.env
+
+configs/isanteplus/custom_modules/*.omod
+configs/isanteplus/*.env
+configs/isanteplus/db/*.sql
+
+configs/streaming-pipeline/data*

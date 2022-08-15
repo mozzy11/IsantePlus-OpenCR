@@ -1,0 +1,184 @@
+version: '3.3'
+
+services:
+  ###
+  # nginx reverse proxy
+  # TODO: set up to use non-root user. See https://www.rockyourcode.com/run-docker-nginx-as-non-root-user/
+  ###
+  nginx:
+   # profiles: ['main']
+    image: nginx:latest
+    container_name: nginx
+    hostname: nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - certs:/etc/letsencrypt
+      - ./configs/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - nginx-data:/var/www
+
+  certbot:
+   #  profiles: ['main']
+    image: certbot/dns-route53
+    container_name: certbot
+    entrypoint: "certbot certonly -n --agree-tos --email pmanko@uw.edu -d sedish-haiti.org -d '*.sedish-haiti.org' --dns-route53 --preferred-challenges=dns"
+    environment:
+    - AWS_ACCESS_KEY_ID
+    - AWS_SECRET_ACCESS_KEY
+    volumes:
+    - certs:/etc/letsencrypt
+    - letsencrypt:/var/lib/letsencrypt
+
+
+  ###
+  # OpenCR
+  ###
+  opencr:
+   #  profiles: ['main']
+    container_name: opencr
+    hostname: opencr
+    image: intrahealth/opencr:latest
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=docker
+      - HAPI_FHIR_URL=http://opencr-fhir:8080/fhir/metadata
+    volumes:
+      - ./configs/opencr/config.json:/src/server/config/config_docker.json
+      - ./configs/opencr/mediator.json:/src/server/config/mediator.json
+      - ./configs/opencr/decisionRules.json:/src/server/config/decisionRules.json
+  
+  opencr-fhir:
+    # profiles: ['main']
+    image: "hapiproject/hapi:latest"
+    container_name: opencr-fhir
+    hostname: opencr-fhir
+    restart: unless-stopped
+    env_file:
+      - configs/opencr/opencr.env
+    volumes:
+      - /data/hapi
+  
+  opencr-es:
+    # profiles: ['main']
+    container_name: es
+    hostname: es
+    image: intrahealth/elasticsearch:latest
+    restart: unless-stopped
+    environment:
+      - node.name=es01
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - es-data:/usr/share/elasticsearch/data
+
+  ###
+  # iSantePlus
+  ###
+  isanteplus:
+    # profiles: ['main']
+    container_name: isanteplus
+    hostname: isanteplus
+    image: ghcr.io/isanteplus/docker-isanteplus-server:${ISANTEPLUS_DOCKER_VERSION}
+    restart: unless-stopped
+    env_file:
+      - ./configs/isanteplus/isanteplus.env
+    volumes:
+      - isanteplus-data:/openmrs/data
+      - ./configs/isanteplus/custom_modules:/custom_modules
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"      
+
+  isanteplus-mysql:
+   #  profiles: ['main']
+    image: ghcr.io/isanteplus/docker-isanteplus-db:${ISANTEPLUS_DB_VERSION}
+    command: mysqld --character-set-server=utf8 --collation-server=utf8_general_ci --sql_mode=""
+    restart: unless-stopped
+    container_name: isanteplus-mysql
+    hostname: isanteplus-mysql
+    healthcheck:
+      test: "exit 0"
+    environment:
+      - MYSQL_DATABASE=openmrs
+      - MYSQL_ROOT_PASSWORD=debezium
+      - MYSQL_USER=mysqluser
+      - MYSQL_PASSWORD=mysqlpw
+      - MYSQL_ROOT_HOST=% # Allow docker containers to connect to mysql
+    volumes:
+      - mysql-data:/var/lib/mysql
+  ###
+  # OpenHIM
+  ###
+  openhim-core:
+   #  profiles: ['main']
+    container_name: openhim-core
+    image: jembi/openhim-core:latest
+    restart: unless-stopped
+    environment:
+      mongo_url: "mongodb://mongo-db/openhim"
+      mongo_atnaUrl: "mongodb://mongo-db/openhim"
+      NODE_ENV: "development"
+    healthcheck:
+      test: "curl -sSk https://localhost:8080/heartbeat || exit 1"
+      interval: 2m
+      timeout: 1m
+      retries: 5
+
+  openhim-console:
+   #  profiles: ['main']
+    container_name: openhim-console
+    image: jembi/openhim-console:latest
+    restart: unless-stopped
+    volumes:
+      - ./configs/openhim-console/default.json:/usr/share/nginx/html/config/default.json
+    healthcheck:
+      test: "curl -sS http://openhim-console || exit 1"
+      interval: 30s
+      timeout: 30s
+      retries: 3
+
+  mongo-db:
+    # profiles: ['main']
+    container_name: mongo-db
+    image: mongo:3.4
+    volumes:
+      - "mongo-data:/data/db"
+    restart: unless-stopped
+
+
+  openhim-config:
+   #  profiles: ['main']
+    container_name: openhim-config
+    image: ghcr.io/i-tech-uw/openhim-config:v0.0.0
+    volumes:
+      - ./configs/openhim-core/initial-config.json:/app/test-openhim-config.json
+    environment:
+      - INITIAL_PW=openhim-password
+      - ADMIN_PW=$ADMIN_PW
+      - API_URL=https://openhim-core:8080
+
+volumes:
+  es-data:
+    driver: local
+  isanteplus-data:
+    driver: local
+  mysql-data:
+    driver: local
+  mongo-data:
+    driver: local
+  shr:
+    driver: local
+  hapi-data:
+    driver: local
+  opencr-data:
+    driver: local
+  certs:
+    driver: local
+  letsencrypt: 
+    driver: local
+  nginx-data: 
+    driver: local
