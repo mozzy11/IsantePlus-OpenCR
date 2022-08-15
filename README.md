@@ -95,8 +95,5 @@ sudo docker-compose -f docker-compose.ports.yml up -d isanteplus-mysql isanteplu
 sudo docker-compose -f docker-compose.ports.yml up -d streaming-pipeline
 ```
 
-## 4. Testing and Validation
-Setup a Postman environment and run tests from this workspace: https://www.postman.com/itechuw/workspace/haiti-sedish
-
 
 
